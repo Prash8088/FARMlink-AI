@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { Product } = require('../models/Product');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 /**
@@ -16,7 +17,9 @@ const getDashboardStats = async (req, res, next) => {
       totalAdmins,
       activeUsers,
       inactiveUsers,
-      recentUsers
+      recentUsers,
+      totalProducts,
+      availableProducts
     ] = await Promise.all([
       User.countDocuments({}),
       User.countDocuments({ role: 'farmer' }),
@@ -28,7 +31,9 @@ const getDashboardStats = async (req, res, next) => {
       User.find({})
         .sort({ createdAt: -1 })
         .limit(8)
-        .select('fullName email phone role state district isActive isVerified createdAt')
+        .select('fullName email phone role state district isActive isVerified createdAt'),
+      Product.countDocuments({}),
+      Product.countDocuments({ status: 'available' })
     ]);
 
     const stats = {
@@ -39,6 +44,8 @@ const getDashboardStats = async (req, res, next) => {
       totalAdmins,
       activeUsers,
       inactiveUsers,
+      totalProducts,
+      availableProducts,
       recentRegistrations: recentUsers
     };
 
@@ -106,7 +113,7 @@ const getAllUsers = async (req, res, next) => {
         page: pageNum,
         limit: limitNum,
         total,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages: Math.ceil(total / limitNum) || 1
       }
     });
   } catch (error) {
@@ -154,13 +161,109 @@ const updateUserStatus = async (req, res, next) => {
 };
 
 /**
+ * @desc    Get all product listings across all farmers
+ * @route   GET /api/admin/products
+ * @access  Private (Admin only)
+ */
+const getAllProducts = async (req, res, next) => {
+  try {
+    const {
+      search = '',
+      category = '',
+      status = '',
+      page = 1,
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    const query = {};
+
+    if (category) query.category = category;
+    if (status) query.status = status;
+
+    if (search.trim()) {
+      const regex = new RegExp(search.trim(), 'i');
+      query.$or = [{ cropName: regex }, { description: regex }, { pickupLocation: regex }];
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
+    const skip = (pageNum - 1) * limitNum;
+
+    const sortOption = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .populate('farmerId', 'fullName email phone state district village')
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limitNum),
+      Product.countDocuments(query)
+    ]);
+
+    return successResponse(res, 'Admin product directory retrieved successfully', {
+      products,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Deactivate or update product listing status (Admin control)
+ * @route   PATCH /api/admin/products/:id/status
+ * @access  Private (Admin only)
+ */
+const updateProductStatusByAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return errorResponse(res, 'Product listing not found', 404);
+    }
+
+    if (status) {
+      product.status = status;
+    } else {
+      product.status =
+        product.status === 'deactivated_by_admin' ? 'available' : 'deactivated_by_admin';
+    }
+
+    await product.save();
+
+    return successResponse(
+      res,
+      `Listing for "${product.cropName}" status set to "${product.status}" by administrator.`,
+      product
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Get detailed platform statistics & geographic distribution
  * @route   GET /api/admin/statistics
  * @access  Private (Admin only)
  */
 const getStatistics = async (req, res, next) => {
   try {
-    const [roleDistribution, stateDistribution, totalCount] = await Promise.all([
+    const [
+      roleDistribution,
+      stateDistribution,
+      totalCount,
+      productCategoryStats,
+      totalProductCount
+    ] = await Promise.all([
       User.aggregate([
         {
           $group: {
@@ -179,13 +282,26 @@ const getStatistics = async (req, res, next) => {
         { $sort: { count: -1 } },
         { $limit: 10 }
       ]),
-      User.countDocuments({})
+      User.countDocuments({}),
+      Product.aggregate([
+        {
+          $group: {
+            _id: '$category',
+            count: { $sum: 1 },
+            totalQuantity: { $sum: '$quantity' }
+          }
+        },
+        { $sort: { count: -1 } }
+      ]),
+      Product.countDocuments({})
     ]);
 
     return successResponse(res, 'Platform statistics retrieved successfully', {
       totalUsers: totalCount,
       roleDistribution,
-      stateDistribution
+      stateDistribution,
+      totalProducts: totalProductCount,
+      productCategoryStats
     });
   } catch (error) {
     next(error);
@@ -196,5 +312,7 @@ module.exports = {
   getDashboardStats,
   getAllUsers,
   updateUserStatus,
+  getAllProducts,
+  updateProductStatusByAdmin,
   getStatistics
 };

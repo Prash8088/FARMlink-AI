@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import { adminService } from '../../services/adminService';
 import { StatCard } from '../../components/common/StatCard';
 import { RoleBadge, StatusBadge, VerifiedBadge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, formatCurrency } from '../../utils/formatters';
+import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import {
   Users,
   Sprout,
@@ -22,14 +23,18 @@ import {
   AlertTriangle,
   MapPin,
   TrendingUp,
-  BarChart2
+  BarChart2,
+  Package,
+  Eye,
+  ShieldAlert,
+  X
 } from 'lucide-react';
 
 export const AdminDashboard = () => {
   const { user: currentAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Active tab: overview | users | stats
+  // Active tab: overview | products | users | stats
   const activeTab = searchParams.get('tab') || 'overview';
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
@@ -44,11 +49,21 @@ export const AdminDashboard = () => {
   const [tableLoading, setTableLoading] = useState(false);
   const [alert, setAlert] = useState(null);
 
-  // Filters
+  // User Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Product Directory State (Version 2)
+  const [adminProducts, setAdminProducts] = useState([]);
+  const [productsPagination, setProductsPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('');
+  const [productStatusFilter, setProductStatusFilter] = useState('');
+  const [productCurrentPage, setProductCurrentPage] = useState(1);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [inspectProduct, setInspectProduct] = useState(null);
 
   // Fetch dashboard summary
   const fetchDashboardData = useCallback(async () => {
@@ -93,6 +108,31 @@ export const AdminDashboard = () => {
     }
   }, [searchQuery, roleFilter, statusFilter, currentPage]);
 
+  // Fetch products directory (Version 2)
+  const fetchAdminProducts = useCallback(async () => {
+    try {
+      setProductsLoading(true);
+      const res = await adminService.getAllProducts({
+        search: productSearch,
+        category: productCategoryFilter,
+        status: productStatusFilter,
+        page: productCurrentPage,
+        limit: 10
+      });
+      if (res.success && res.data) {
+        setAdminProducts(res.data.products);
+        setProductsPagination(res.data.pagination);
+      }
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to fetch product listings'
+      });
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [productSearch, productCategoryFilter, productStatusFilter, productCurrentPage]);
+
   // Fetch detailed statistics
   const fetchDetailedStats = useCallback(async () => {
     try {
@@ -111,8 +151,13 @@ export const AdminDashboard = () => {
   }, [fetchDashboardData, fetchDetailedStats]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (activeTab === 'users' || activeTab === 'overview') {
+      fetchUsers();
+    }
+    if (activeTab === 'products' || activeTab === 'overview') {
+      fetchAdminProducts();
+    }
+  }, [activeTab, fetchUsers, fetchAdminProducts]);
 
   // Toggle user status (Activate / Deactivate)
   const handleToggleUserStatus = async (user) => {
@@ -142,7 +187,6 @@ export const AdminDashboard = () => {
           type: 'success',
           message: res.message || `User account successfully ${actionLabel}d.`
         });
-        // Refresh both list and dashboard counts
         fetchUsers();
         fetchDashboardData();
       }
@@ -150,6 +194,38 @@ export const AdminDashboard = () => {
       setAlert({
         type: 'error',
         message: err.response?.data?.message || `Failed to ${actionLabel} account.`
+      });
+    }
+  };
+
+  // Toggle product status by Admin (Deactivate inappropriate listing)
+  const handleToggleProductStatus = async (product) => {
+    const isCurrentlyDeactivated = product.status === 'deactivated_by_admin';
+    const nextStatus = isCurrentlyDeactivated ? 'available' : 'deactivated_by_admin';
+    const actionLabel = isCurrentlyDeactivated ? 'restore' : 'deactivate';
+
+    if (
+      !window.confirm(
+        `Are you sure you want to ${actionLabel} crop listing "${product.cropName}"?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await adminService.updateProductStatus(product._id, nextStatus);
+      if (res.success) {
+        setAlert({
+          type: 'success',
+          message: res.message || `Listing status updated to ${nextStatus}.`
+        });
+        fetchAdminProducts();
+        fetchDashboardData();
+      }
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message: err.response?.data?.message || `Failed to ${actionLabel} product listing.`
       });
     }
   };
@@ -167,7 +243,7 @@ export const AdminDashboard = () => {
             Platform Command Center
           </h2>
           <p className="mt-2 text-sm text-slate-300 leading-relaxed">
-            Real-time management of agricultural producers, wholesale buyers, logistics providers, and platform security policies.
+            Real-time governance of agricultural producers, wholesale buyers, logistics providers, and marketplace listings.
           </p>
 
           {/* Tab Navigation */}
@@ -181,6 +257,16 @@ export const AdminDashboard = () => {
               }`}
             >
               Overview & Metrics
+            </button>
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`px-4 py-2 rounded-xl transition-all ${
+                activeTab === 'products'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Marketplace Listings ({stats?.totalProducts || 0})
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -200,7 +286,7 @@ export const AdminDashboard = () => {
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
-              Geographic Distribution
+              Geographic & Category Stats
             </button>
           </div>
         </div>
@@ -214,7 +300,7 @@ export const AdminDashboard = () => {
         />
       )}
 
-      {/* Primary Metrics Grid (Always visible across tabs for immediate context) */}
+      {/* Primary Metrics Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard
           title="Total Users"
@@ -222,6 +308,13 @@ export const AdminDashboard = () => {
           icon={Users}
           color="purple"
           badgeText="Real DB"
+        />
+        <StatCard
+          title="Crop Listings"
+          value={stats ? stats.totalProducts : '...'}
+          icon={Package}
+          color="emerald"
+          badgeText="Version 2"
         />
         <StatCard
           title="Farmers"
@@ -251,16 +344,9 @@ export const AdminDashboard = () => {
           color="emerald"
           badgeText="Live"
         />
-        <StatCard
-          title="Inactive Accounts"
-          value={stats ? stats.inactiveUsers : '...'}
-          icon={XCircle}
-          color="rose"
-          badgeText="Restricted"
-        />
       </div>
 
-      {/* TAB 1: OVERVIEW & RECENT REGISTRATIONS */}
+      {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="space-y-8">
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
@@ -325,10 +411,16 @@ export const AdminDashboard = () => {
               </table>
             </div>
 
-            <div className="pt-2 flex justify-end">
+            <div className="pt-2 flex justify-between items-center text-xs">
+              <button
+                onClick={() => setActiveTab('products')}
+                className="font-bold text-emerald-600 hover:text-emerald-700"
+              >
+                Inspect Marketplace Listings ({stats?.totalProducts || 0}) →
+              </button>
               <button
                 onClick={() => setActiveTab('users')}
-                className="text-xs font-bold text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                className="font-bold text-purple-600 hover:text-purple-700"
               >
                 Go to Full User Management Directory →
               </button>
@@ -337,7 +429,220 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* TAB 2: FULL USER DIRECTORY & MANAGEMENT TABLE */}
+      {/* TAB 2: MARKETPLACE PRODUCT DIRECTORY (VERSION 2) */}
+      {activeTab === 'products' && (
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">
+                Marketplace Product Directory (Version 2)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Inspect all crop listings across India, check details, and deactivate inappropriate posts.
+              </p>
+            </div>
+            <button
+              onClick={fetchAdminProducts}
+              className="text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors self-start sm:self-auto"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${productsLoading ? 'animate-spin' : ''}`} />
+              Reload Products
+            </button>
+          </div>
+
+          {/* Search & Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                <Search className="w-4 h-4" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search crop, variety, location..."
+                value={productSearch}
+                onChange={(e) => {
+                  setProductSearch(e.target.value);
+                  setProductCurrentPage(1);
+                }}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-purple-500"
+              />
+            </div>
+
+            <div>
+              <select
+                value={productCategoryFilter}
+                onChange={(e) => {
+                  setProductCategoryFilter(e.target.value);
+                  setProductCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Crop Categories</option>
+                {PRODUCT_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <select
+                value={productStatusFilter}
+                onChange={(e) => {
+                  setProductStatusFilter(e.target.value);
+                  setProductCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="available">Available (Public)</option>
+                <option value="unavailable">Unavailable (Farmer Paused)</option>
+                <option value="deactivated_by_admin">Deactivated by Admin</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-400 uppercase tracking-wider font-semibold">
+                  <th className="pb-3 pr-4">Crop Details</th>
+                  <th className="pb-3 px-4">Category</th>
+                  <th className="pb-3 px-4">Farmer / Origin</th>
+                  <th className="pb-3 px-4">Available Stock</th>
+                  <th className="pb-3 px-4">Rate & Value</th>
+                  <th className="pb-3 px-4">Status</th>
+                  <th className="pb-3 pl-4 text-right">Admin Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {adminProducts.length > 0 ? (
+                  adminProducts.map((p) => {
+                    const isDeactivated = p.status === 'deactivated_by_admin';
+                    const coverImg =
+                      p.images && p.images[0]
+                        ? p.images[0]
+                        : 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&q=80&w=200';
+                    return (
+                      <tr key={p._id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 pr-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={coverImg}
+                              alt=""
+                              className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
+                            />
+                            <div>
+                              <p className="font-bold text-slate-900 line-clamp-1">{p.cropName}</p>
+                              <span className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-bold">
+                                {p.qualityGrade}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-semibold text-slate-700">{p.category}</td>
+
+                        <td className="py-3.5 px-4">
+                          <p className="font-bold text-slate-900">{p.farmerId?.fullName || 'Farmer'}</p>
+                          <p className="text-[11px] text-slate-400">
+                            {p.district}, {p.state}
+                          </p>
+                        </td>
+
+                        <td className="py-3.5 px-4 font-bold text-slate-800">
+                          {p.quantity} <span className="text-[11px] font-normal text-slate-500">{p.unit}</span>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          <p className="font-bold text-slate-900">{formatCurrency(p.pricePerUnit)} / {p.unit}</p>
+                          <p className="text-[11px] text-emerald-600 font-semibold font-mono">
+                            Lot: {formatCurrency(p.quantity * p.pricePerUnit)}
+                          </p>
+                        </td>
+
+                        <td className="py-3.5 px-4">
+                          {isDeactivated ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                              Deactivated by Admin
+                            </span>
+                          ) : p.status === 'available' ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                              Available
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                              Unavailable
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3.5 pl-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setInspectProduct(p)}
+                              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600"
+                              title="Inspect Details"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => handleToggleProductStatus(p)}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                                isDeactivated
+                                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'
+                              }`}
+                            >
+                              {isDeactivated ? 'Restore' : 'Deactivate'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
+                      {productsLoading ? 'Loading products from database...' : 'No products found.'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {productsPagination.totalPages > 1 && (
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span>
+                Page {productsPagination.page} of {productsPagination.totalPages} ({productsPagination.total} Total Listings)
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={productCurrentPage <= 1}
+                  onClick={() => setProductCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={productCurrentPage >= productsPagination.totalPages}
+                  onClick={() => setProductCurrentPage((p) => Math.min(productsPagination.totalPages, p + 1))}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: USER DIRECTORY */}
       {activeTab === 'users' && (
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
@@ -358,7 +663,6 @@ export const AdminDashboard = () => {
 
           {/* Search & Filter Controls */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Search */}
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                 <Search className="w-4 h-4" />
@@ -375,7 +679,6 @@ export const AdminDashboard = () => {
               />
             </div>
 
-            {/* Role Filter */}
             <div>
               <select
                 value={roleFilter}
@@ -393,7 +696,6 @@ export const AdminDashboard = () => {
               </select>
             </div>
 
-            {/* Status Filter */}
             <div>
               <select
                 value={statusFilter}
@@ -502,7 +804,7 @@ export const AdminDashboard = () => {
             </table>
           </div>
 
-          {/* Pagination Controls */}
+          {/* Pagination */}
           {pagination.totalPages > 1 && (
             <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
               <span>
@@ -529,7 +831,7 @@ export const AdminDashboard = () => {
         </div>
       )}
 
-      {/* TAB 3: PLATFORM DEMOGRAPHICS & STATE STATS */}
+      {/* TAB 4: STATISTICS & GEOGRAPHIC DISTRIBUTION */}
       {activeTab === 'stats' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* Geographic Breakdown */}
@@ -538,7 +840,6 @@ export const AdminDashboard = () => {
               <MapPin className="w-5 h-5 text-emerald-600" />
               <h3 className="text-base font-bold text-slate-900">Geographic State Distribution</h3>
             </div>
-            <p className="text-xs text-slate-500">Top user registrations by Indian state:</p>
             <div className="space-y-3 pt-2">
               {detailedStats?.stateDistribution && detailedStats.stateDistribution.length > 0 ? (
                 detailedStats.stateDistribution.map((item, idx) => (
@@ -555,24 +856,104 @@ export const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Role Breakdown */}
+          {/* Product Category Breakdown (Version 2) */}
           <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-              <BarChart2 className="w-5 h-5 text-purple-600" />
-              <h3 className="text-base font-bold text-slate-900">Ecosystem Role Breakdown</h3>
+              <Package className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-base font-bold text-slate-900">Crop Categories in Marketplace</h3>
             </div>
-            <p className="text-xs text-slate-500">Registered user share across roles:</p>
             <div className="space-y-3 pt-2">
-              {detailedStats?.roleDistribution && detailedStats.roleDistribution.length > 0 ? (
-                detailedStats.roleDistribution.map((item, idx) => (
+              {detailedStats?.productCategoryStats && detailedStats.productCategoryStats.length > 0 ? (
+                detailedStats.productCategoryStats.map((item, idx) => (
                   <div key={idx} className="flex items-center justify-between text-xs">
-                    <RoleBadge role={item._id} />
-                    <span className="font-mono font-bold text-slate-800">{item.count} Accounts</span>
+                    <span className="font-semibold text-slate-800">{item._id || 'General'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-mono font-bold text-[11px]">
+                        {item.count} crops
+                      </span>
+                      <span className="text-slate-400 font-mono text-[11px]">
+                        {item.totalQuantity} units
+                      </span>
+                    </div>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-400 italic">No role distribution data.</p>
+                <p className="text-xs text-slate-400 italic">No category data yet.</p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Inspect Product Modal */}
+      {inspectProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Package className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base font-bold text-slate-900">{inspectProduct.cropName}</h3>
+              </div>
+              <button
+                onClick={() => setInspectProduct(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {inspectProduct.images && inspectProduct.images.length > 0 && (
+              <img
+                src={inspectProduct.images[0]}
+                alt=""
+                className="w-full h-48 object-cover rounded-2xl"
+              />
+            )}
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-400 block mb-0.5">Category</span>
+                <span className="font-bold text-slate-900">{inspectProduct.category}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-400 block mb-0.5">Quality Grade</span>
+                <span className="font-bold text-amber-700">{inspectProduct.qualityGrade}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-400 block mb-0.5">Stock Quantity</span>
+                <span className="font-bold text-slate-900">
+                  {inspectProduct.quantity} {inspectProduct.unit}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-slate-400 block mb-0.5">Price</span>
+                <span className="font-bold text-emerald-700">
+                  {formatCurrency(inspectProduct.pricePerUnit)} / {inspectProduct.unit}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-1">
+              <span className="text-slate-400 block font-semibold uppercase">Description</span>
+              <p className="text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed">
+                {inspectProduct.description}
+              </p>
+            </div>
+
+            <div className="text-xs space-y-1">
+              <span className="text-slate-400 block font-semibold uppercase">Farmer & Location</span>
+              <p className="text-slate-800">
+                <strong>{inspectProduct.farmerId?.fullName}</strong> — {inspectProduct.pickupLocation}, {inspectProduct.district}, {inspectProduct.state}
+              </p>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setInspectProduct(null)}
+                className="px-5 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold"
+              >
+                Close Inspection
+              </button>
             </div>
           </div>
         </div>

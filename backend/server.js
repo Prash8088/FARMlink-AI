@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -9,6 +10,7 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const productRoutes = require('./routes/productRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -30,11 +32,14 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Body parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 
 // Cookie parser
 app.use(cookieParser());
+
+// Static uploads serving for uploaded product images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // CORS configuration
 const allowedOrigins = [
@@ -65,8 +70,9 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'FARMlink AI API',
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    version: '2.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    modules: ['Foundation & RBAC', 'Farmer Marketplace (V2)']
   });
 });
 
@@ -77,6 +83,7 @@ app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/products', productRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);
@@ -84,18 +91,19 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`===============================================`);
-  console.log(` FARMlink AI Server running in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(` Port: ${PORT}`);
-  console.log(` Health: http://localhost:${PORT}/api/health`);
-  console.log(`===============================================`);
-});
+if (require.main === module) {
+  const server = app.listen(PORT, () => {
+    console.log(`===============================================`);
+    console.log(` FARMlink AI Server (v2.0) running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(` Port: ${PORT}`);
+    console.log(` Health: http://localhost:${PORT}/api/health`);
+    console.log(`===============================================`);
+  });
 
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
-  console.error(`[Unhandled Rejection] ${err.message}`);
-  // In production, might gracefully shutdown server
-});
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (err) => {
+    console.error(`[Unhandled Rejection] ${err.message}`);
+  });
+}
 
 module.exports = app;

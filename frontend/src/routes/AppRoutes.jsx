@@ -26,6 +26,12 @@ import { BuyerDashboard } from '../dashboards/buyer/BuyerDashboard';
 import { TransporterDashboard } from '../dashboards/transporter/TransporterDashboard';
 import { AdminDashboard } from '../dashboards/admin/AdminDashboard';
 
+// Version 2 Farmer Marketplace Pages
+import { FarmerProductsPage } from '../pages/farmer/FarmerProductsPage';
+import { AddProductPage } from '../pages/farmer/AddProductPage';
+import { EditProductPage } from '../pages/farmer/EditProductPage';
+import { ProductDetailPage } from '../pages/farmer/ProductDetailPage';
+
 // Helper component to redirect /dashboard to role-specific dashboard
 const DashboardRedirect = () => {
   const { user, getRoleDashboardPath } = useAuth();
@@ -43,6 +49,8 @@ export const AppRoutes = () => {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        {/* Public Product Inspection */}
+        <Route path="/products/:id" element={<ProductDetailPage />} />
       </Route>
 
       {/* Authenticated Dashboard Pages with DashboardLayout (Sidebar + Topbar) */}
@@ -56,12 +64,44 @@ export const AppRoutes = () => {
         {/* Smart Index /dashboard */}
         <Route path="/dashboard" element={<DashboardRedirect />} />
 
-        {/* Farmer Dashboard */}
+        {/* Farmer Dashboard & Marketplace (Version 2) */}
         <Route
           path="/dashboard/farmer"
           element={
             <ProtectedRoute allowedRoles={['farmer']}>
               <FarmerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/farmer/products"
+          element={
+            <ProtectedRoute allowedRoles={['farmer']}>
+              <FarmerProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/farmer/products/new"
+          element={
+            <ProtectedRoute allowedRoles={['farmer']}>
+              <AddProductPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/farmer/products/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={['farmer']}>
+              <EditProductPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/farmer/products/:id"
+          element={
+            <ProtectedRoute allowedRoles={['farmer', 'admin', 'buyer', 'transporter']}>
+              <ProductDetailPage />
             </ProtectedRoute>
           }
         />

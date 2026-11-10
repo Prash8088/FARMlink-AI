@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
+import { productService } from '../../services/productService';
 import { StatCard } from '../../components/common/StatCard';
 import { UpcomingActionCard } from '../../components/common/ComingSoonBadge';
 import { formatDate, formatCurrency } from '../../utils/formatters';
@@ -16,11 +17,30 @@ import {
   Truck,
   ShieldCheck,
   Edit,
-  UserCheck
+  UserCheck,
+  Plus
 } from 'lucide-react';
 
 export const FarmerDashboard = () => {
   const { user } = useAuth();
+  const [productCount, setProductCount] = useState(0);
+  const [availableCount, setAvailableCount] = useState(0);
+
+  useEffect(() => {
+    const loadProductStats = async () => {
+      try {
+        const res = await productService.getMyProducts({ limit: 1 });
+        if (res.success && res.data?.summary) {
+          setProductCount(res.data.summary.totalListings);
+          setAvailableCount(res.data.summary.available);
+        }
+      } catch (e) {
+        console.warn('Could not load farmer listing stats', e);
+      }
+    };
+
+    loadProductStats();
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -29,7 +49,7 @@ export const FarmerDashboard = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 text-xs font-semibold uppercase tracking-wider mb-3">
             <Sprout className="w-3.5 h-3.5 text-emerald-300" />
-            <span>Farmer Operations Console • Version 1</span>
+            <span>Farmer Operations Console • Version 2 Active</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Namaste, {user?.fullName || 'Farmer'}!
@@ -43,18 +63,25 @@ export const FarmerDashboard = () => {
           </p>
           <div className="mt-5 flex flex-wrap gap-3 text-xs">
             <Link
-              to="/profile"
+              to="/dashboard/farmer/products"
               className="px-4 py-2 bg-white text-emerald-900 font-bold rounded-xl hover:bg-emerald-50 transition-colors shadow-sm inline-flex items-center gap-1.5"
             >
-              <UserCheck className="w-4 h-4 text-emerald-700" />
-              View Complete Farm Profile
+              <Package className="w-4 h-4 text-emerald-700" />
+              Manage Produce Listings ({productCount})
             </Link>
             <Link
-              to="/profile/edit"
+              to="/dashboard/farmer/products/new"
+              className="px-4 py-2 bg-emerald-900/60 text-emerald-100 hover:bg-emerald-900/80 font-semibold rounded-xl border border-emerald-400/40 transition-colors inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5 text-emerald-300" />
+              Publish New Crop
+            </Link>
+            <Link
+              to="/profile"
               className="px-4 py-2 bg-emerald-900/40 text-emerald-100 hover:bg-emerald-900/60 font-semibold rounded-xl border border-emerald-400/30 transition-colors inline-flex items-center gap-1.5"
             >
-              <Edit className="w-3.5 h-3.5" />
-              Update Farm Details
+              <UserCheck className="w-3.5 h-3.5" />
+              View Farm Profile
             </Link>
           </div>
         </div>
@@ -71,11 +98,11 @@ export const FarmerDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <StatCard
             title="Total Products Listed"
-            value="0"
-            subtext="Produce catalog unlocks in Version 2"
+            value={productCount}
+            subtext={`${availableCount} currently active for bulk buyers`}
             icon={Package}
             color="emerald"
-            badgeText="V1 Zero Baseline"
+            badgeText="Version 2 Live"
           />
           <StatCard
             title="Active Orders"
@@ -83,7 +110,7 @@ export const FarmerDashboard = () => {
             subtext="No active buyer purchase requests"
             icon={Layers}
             color="blue"
-            badgeText="Pending V2 Sourcing"
+            badgeText="Upcoming V3"
           />
           <StatCard
             title="Completed Orders"
@@ -185,15 +212,15 @@ export const FarmerDashboard = () => {
           <div className="space-y-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <CheckCircle className="w-4 h-4" />
+                <Package className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-900">Account Activated</p>
+                <p className="text-xs font-bold text-slate-900">Marketplace Module Activated</p>
                 <p className="text-[11px] text-slate-500">
-                  Welcome to FARMlink AI. Your farmer account is registered and authenticated.
+                  Version 2 is live. You can now publish, manage, and price harvest listings.
                 </p>
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  {formatDate(user?.createdAt)}
+                <span className="text-[10px] text-emerald-600 font-semibold mt-1 block">
+                  Version 2 Live
                 </span>
               </div>
             </div>
@@ -216,9 +243,9 @@ export const FarmerDashboard = () => {
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-900">Version 2 Pipeline Ready</p>
+                <p className="text-xs font-bold text-slate-900">Version 3 AI Matchmaker</p>
                 <p className="text-[11px] text-slate-500">
-                  Direct crop listing & AI price prediction scheduled for upcoming release.
+                  Automated institutional buyer matching scheduled for upcoming release.
                 </p>
                 <span className="text-[10px] text-amber-600 font-semibold mt-1 block">Upcoming</span>
               </div>
@@ -227,39 +254,56 @@ export const FarmerDashboard = () => {
         </div>
       </div>
 
-      {/* Upcoming Action Cards (Clearly labeled as Version 2) */}
+      {/* Marketplace Actions */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">
-              Upcoming Marketplace Actions (Version 2)
+              Marketplace Operations
             </h3>
             <p className="text-xs text-slate-500">
-              These modules are in active development and scheduled for the next release.
+              Active tools to manage your harvest supply and connect with buyers.
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <UpcomingActionCard
-            title="List Harvest Produce"
-            description="Create public marketplace listings for crops with quality grade, quantity, and minimum price per quintal."
-            icon={Package}
-            versionBadge="Version 2 Feature"
-          />
+          {/* Active Version 2 Action Card */}
+          <div className="bg-white rounded-2xl p-5 border-2 border-emerald-500/80 shadow-xs hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between mb-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                  <Package className="w-5 h-5" />
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase tracking-wider">
+                  Active V2
+                </span>
+              </div>
+              <h4 className="text-base font-bold text-slate-900">Publish Harvest Produce</h4>
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                Create new crop listings with multiple photos, quality grades, and transparent minimum prices per quintal.
+              </p>
+            </div>
+            <Link
+              to="/dashboard/farmer/products/new"
+              className="mt-4 w-full py-2.5 px-3 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl text-center transition-colors shadow-xs"
+            >
+              Add New Crop Listing →
+            </Link>
+          </div>
 
           <UpcomingActionCard
             title="ML Crop Price Prediction"
             description="Machine learning forecasts analyzing historical mandi rates to recommend optimal selling times."
             icon={TrendingUp}
-            versionBadge="Version 2 Feature"
+            versionBadge="Version 3 Feature"
           />
 
           <UpcomingActionCard
             title="Book Dedicated Transport"
             description="Request verified refrigerated or dry container vehicles to pick up harvested stock at your farm."
             icon={Truck}
-            versionBadge="Version 2 Feature"
+            versionBadge="Version 3 Feature"
           />
         </div>
       </div>

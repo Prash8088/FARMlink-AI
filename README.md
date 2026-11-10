@@ -1,5 +1,5 @@
 # FARMlink AI – Intelligent Agricultural Marketplace
-## Version 1: Foundation, Authentication & Role-Based Dashboards
+## Version 2: Farmer Marketplace Module & Production Foundation
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-4.21-lightgrey.svg)](https://expressjs.com/)
@@ -7,17 +7,18 @@
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-teal.svg)](https://tailwindcss.com/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-purple.svg)](https://vitejs.dev/)
+[![Version](https://img.shields.io/badge/FARMlink%20AI-v2.0.0-emerald.svg)](https://github.com)
 
 ---
 
 ### 1. Project Overview
 
-**FARMlink AI** is a production-style, intelligent agricultural technology platform that bridges Indian farmers directly with commercial bulk buyers and certified logistics transporters on one unified platform.
+**FARMlink AI** is a production-style, intelligent agricultural technology platform connecting Indian farmers directly with commercial bulk buyers and certified logistics transporters on one unified platform.
 
-By eliminating predatory middlemen and unverified intermediaries, FARMlink AI restores price transparency, guarantees genuine origin provenance for buyers, and increases freight utilization for transport providers.
+By eliminating predatory middlemen, FARMlink AI restores price transparency, guarantees origin provenance for buyers, and optimizes freight transport directly from farm gates.
 
-> **Version 1 Scope Notice:**  
-> Version 1 focuses strictly on the core architectural foundation: **Role-Based Access Control (RBAC)**, **Authentication**, **Multi-Role User Profiles**, **Four Independent Dashboards**, and **Administrator User Management**. Future modules (AI buyer matching, ML crop price prediction, and marketplace listings) will be introduced in subsequent versions.
+- **Version 1 (Completed)**: Core Foundation, Authentication (JWT in HTTP-only Cookie + Bearer), Role-Based Access Control (`farmer`, `buyer`, `transporter`, `admin`), User Profile Management, and 4 Role Dashboards.
+- **Version 2 (Active & Complete)**: **Farmer Marketplace Module** — enables authenticated farmers to create, publish, manage, edit, stock-control, and delete agricultural produce listings with multi-image uploads (Cloudinary + local static fallback) and admin directory governance.
 
 ---
 
@@ -25,156 +26,101 @@ By eliminating predatory middlemen and unverified intermediaries, FARMlink AI re
 
 - **Frontend**:
   - React.js 18 with Vite
-  - Tailwind CSS 3.4
+  - Tailwind CSS 3.4 (Custom agricultural palette)
   - React Router DOM v6
-  - Axios with interceptors & credential handling
+  - Axios with interceptors, credentials & multipart form support
   - Lucide React iconography
 - **Backend**:
   - Node.js & Express.js REST API
-  - JWT (JSON Web Tokens) with HTTP-only Cookie and Bearer Authorization
+  - JWT (JSON Web Tokens) with HTTP-only Cookies and Bearer Authorization
   - bcryptjs (12 salt rounds for password hashing)
+  - Multer & Cloudinary (dual-mode image storage with local fallback)
   - Express middleware: `helmet`, `morgan`, `cors`, `cookie-parser`, `express-rate-limit`
 - **Database**:
   - MongoDB (Local / MongoDB Atlas)
-  - Mongoose 8 ODM with embedded schemas and indexing
-- **Security**:
-  - Strict input sanitization & mass-assignment guards
-  - Admin-only routes guarded on the backend
-  - Public registration disallows selecting the Admin role
-  - Brute-force rate limiting on auth routes
-  - Passwords excluded by default (`select: false`)
+  - Mongoose 8 ODM with embedded schemas, compound indexes, and text search
 
 ---
 
-### 3. User Roles & Capabilities
+### 3. Version 2 Features: Farmer Marketplace Module
 
-| Role | Public Registration? | Dashboard Route | Key Version 1 Capabilities |
-| :--- | :--- | :--- | :--- |
-| **Farmer** | Yes (`/register?role=farmer`) | `/dashboard/farmer` | Manage farm specs, crops grown, view baseline stats, view upcoming marketplace actions (produce listings, AI price forecasting) |
-| **Agri Buyer** | Yes (`/register?role=buyer`) | `/dashboard/buyer` | Manage commercial procurement details, target categories, view baseline purchase orders, view upcoming RFQ tools |
-| **Transporter** | Yes (`/register?role=transporter`) | `/dashboard/transporter` | Manage vehicle registration, capacity, operating corridors, view baseline delivery stats, view upcoming load requests |
-| **Admin** | **No** (Controlled Seed Only) | `/dashboard/admin` | Live system overview, total user metrics, recent signups, searchable/filterable user directory, instant account activation/deactivation |
-
----
-
-### 4. Folder Structure
-
-```text
-FARMlink-AI/
-├── backend/
-│   ├── config/
-│   │   └── db.js                 # MongoDB connection logic
-│   ├── controllers/
-│   │   ├── authController.js     # Register, Login, Logout, getMe
-│   │   ├── userController.js     # Get & Update profile
-│   │   └── adminController.js    # Stats, User listing, Status toggle
-│   ├── middleware/
-│   │   ├── authMiddleware.js     # verifyToken & authorize('role')
-│   │   ├── validationMiddleware.js # Input checks & mass-assignment guard
-│   │   ├── rateLimiter.js        # Auth and API rate limiters
-│   │   └── errorMiddleware.js    # 404 & global exception handler
-│   ├── models/
-│   │   └── User.js               # Unified Mongoose schema with role subdocs
-│   ├── routes/
-│   │   ├── authRoutes.js         # /api/auth/*
-│   │   ├── userRoutes.js         # /api/users/*
-│   │   └── adminRoutes.js        # /api/admin/*
-│   ├── scripts/
-│   │   ├── seedAdmin.js          # Secure admin and demo account seeder
-│   │   └── testApis.js           # 14-point automated test suite
-│   ├── utils/
-│   │   ├── apiResponse.js        # Centralized JSON response helpers
-│   │   ├── jwt.js                # Token signer & cookie helper
-│   │   └── logger.js             # Formatted terminal logger
-│   ├── server.js                 # Express server bootstrap
-│   ├── package.json
-│   ├── .env.example
-│   └── .env
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── assets/
-│   │   ├── components/
-│   │   │   └── common/           # Navbar, Sidebar, Footer, StatCard, Badge, Alert, ProtectedRoute
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx   # Global session state & auth methods
-│   │   ├── dashboards/
-│   │   │   ├── farmer/FarmerDashboard.jsx
-│   │   │   ├── buyer/BuyerDashboard.jsx
-│   │   │   ├── transporter/TransporterDashboard.jsx
-│   │   │   └── admin/AdminDashboard.jsx
-│   │   ├── hooks/
-│   │   │   └── useAuth.js
-│   │   ├── layouts/
-│   │   │   ├── PublicLayout.jsx  # Landing, About, Features, Auth layout
-│   │   │   └── DashboardLayout.jsx # Responsive sidebar + topbar layout
-│   │   ├── pages/
-│   │   │   ├── public/           # LandingPage, AboutPage, FeaturesPage, LoginPage, RegisterPage, NotFoundPage
-│   │   │   └── common/           # ProfilePage, EditProfilePage, SettingsPage
-│   │   ├── routes/
-│   │   │   └── AppRoutes.jsx     # Route definitions and RBAC guards
-│   │   ├── services/
-│   │   │   ├── api.js            # Axios client with interceptors
-│   │   │   ├── authService.js
-│   │   │   ├── userService.js
-│   │   │   └── adminService.js
-│   │   ├── utils/
-│   │   │   ├── constants.js      # States, Categories, Vehicles, Roles
-│   │   │   └── formatters.js     # Currency, dates, string helpers
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── index.html
-│   ├── vite.config.js            # API proxy configuration
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   └── package.json
-│
-├── README.md
-└── .gitignore
-```
+1. **Add Product Listing**:
+   - Crop name, variety, and standard agricultural category (*Grains & Cereals, Pulses & Lentils, Oilseeds, Fresh Vegetables, Horticulture & Fruits, Spices, Cash Crops*).
+   - Rich harvest description.
+   - Multiple crop inspection photographs (supported via drag-and-drop file upload or image URLs).
+   - Available quantity and unit (`kg`, `quintal`, `ton`).
+   - Price per unit in INR (₹) with real-time lot valuation calculator ($Quantity \times Price$).
+   - Quality grade classification (*Grade A Premium, Grade B Standard, Grade C Fair/Processing*).
+   - Harvest date picker.
+   - Farm pickup landmark, state, district, and village coordinates (auto-filled from farmer profile).
+2. **Product Management**:
+   - Dedicated farmer produce catalogue (`/dashboard/farmer/products`).
+   - Quick stock adjustment with numeric modal stepper.
+   - Instant status toggle between `Available` (live to buyers) and `Unavailable` (paused/reserved).
+   - Edit product specs (`/dashboard/farmer/products/:id/edit`).
+   - Delete product with safety confirmation modal.
+   - Search by crop name/description, filter by category/status, and sort by price, quantity, or date.
+3. **Image Upload (Dual-Mode Cloud/Local)**:
+   - Multer validation: rejects non-image formats; limits files to 5MB and 5 images per product.
+   - Cloudinary integration: when `CLOUDINARY_*` credentials are set in `.env`, images upload to Cloudinary.
+   - Local fallback: when Cloudinary is unconfigured or in offline development, images are saved in `backend/uploads/products/` and served statically via Express (`/uploads/products/*`).
+   - URLs are stored in MongoDB; raw image binaries are never stored inside MongoDB documents.
+4. **Product Detail View**:
+   - Public and authenticated inspection page (`/dashboard/farmer/products/:id` & `/products/:id`).
+   - Interactive image carousel/thumbnail selector.
+   - Farm origin & provenance card (farmer name, phone, district, state, pickup gate landmark).
+   - Views counter incremented automatically on each inspection.
+5. **Admin Marketplace Directory**:
+   - Master product table in Admin Console (`/dashboard/admin?tab=products`).
+   - View all listings across all farmers in India.
+   - Search by crop or location, filter by category and status.
+   - Deactivate inappropriate listings (`deactivated_by_admin`) or restore them with one click.
+   - Category-wise crop distribution telemetry in statistics.
 
 ---
 
-### 5. Database Schema (`models/User.js`)
+### 4. Database Schema
 
+#### A. User Schema (`models/User.js`)
+Stores authentication, credentials, and role-specific subdocuments (`farmerDetails`, `buyerDetails`, `transporterDetails`).
+
+#### B. Product Schema (`models/Product.js`)
 ```javascript
 {
-  fullName: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, index: true },
-  phone: { type: String, required: true, trim: true },
-  passwordHash: { type: String, required: true, select: false },
-  role: { type: String, enum: ['farmer', 'buyer', 'transporter', 'admin'], default: 'farmer', index: true },
-  profileImage: { type: String, default: '' },
-  address: { type: String, default: '' },
-  state: { type: String, required: true },
-  district: { type: String, required: true },
-  village: { type: String, required: true },
-  
-  // Embedded role-specific subdocuments:
-  farmerDetails: {
-    farmName: String,
-    farmLocation: String,
-    farmingExperience: Number,
-    mainCropsGrown: [String]
+  farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  cropName: { type: String, required: true, trim: true },
+  category: {
+    type: String,
+    required: true,
+    enum: [
+      'Grains & Cereals', 'Pulses & Lentils', 'Oilseeds', 'Fresh Vegetables',
+      'Horticulture & Fruits', 'Spices & Condiments', 'Cash Crops', 'Other'
+    ],
+    index: true
   },
-  buyerDetails: {
-    businessName: String,
-    businessType: String,
-    businessLocation: String,
-    requiredCategories: [String]
+  description: { type: String, required: true, trim: true },
+  images: { type: [String], required: true }, // Array of hosted URLs (Cloudinary / local)
+  quantity: { type: Number, required: true, min: 0 },
+  unit: { type: String, required: true, enum: ['kg', 'quintal', 'ton'], default: 'quintal' },
+  pricePerUnit: { type: Number, required: true, min: 0 },
+  qualityGrade: {
+    type: String,
+    required: true,
+    enum: ['Grade A (Premium)', 'Grade B (Standard)', 'Grade C (Fair/Processing)']
   },
-  transporterDetails: {
-    companyOrIndividualName: String,
-    vehicleType: String,
-    vehicleRegNumber: String,
-    vehicleCapacity: String,
-    operatingLocations: [String]
+  harvestDate: { type: Date, required: true },
+  pickupLocation: { type: String, required: true, trim: true },
+  state: { type: String, required: true, trim: true },
+  district: { type: String, required: true, trim: true },
+  village: { type: String, required: true, trim: true },
+  status: {
+    type: String,
+    enum: ['available', 'unavailable', 'deactivated_by_admin'],
+    default: 'available',
+    index: true
   },
-  
   isActive: { type: Boolean, default: true, index: true },
-  isVerified: { type: Boolean, default: false },
+  viewsCount: { type: Number, default: 0 },
   createdAt: Date,
   updatedAt: Date
 }
@@ -182,27 +128,39 @@ FARMlink-AI/
 
 ---
 
-### 6. Backend API Endpoints
+### 5. Backend REST API Endpoints
 
 #### Authentication (`/api/auth`)
-- `POST /api/auth/register` — Public registration for Farmer, Buyer, or Transporter (Rejects Admin).
-- `POST /api/auth/login` — Sign in with email and password. Sets HTTP-only cookie and returns JWT.
-- `POST /api/auth/logout` — Clears authentication cookie.
-- `GET /api/auth/me` — Retrieves current authenticated session user.
+- `POST /api/auth/register` — Register Farmer, Buyer, or Transporter (Admin restricted).
+- `POST /api/auth/login` — Sign in, set HTTP-only cookie, and return JWT.
+- `POST /api/auth/logout` — Invalidate session and clear auth cookie.
+- `GET /api/auth/me` — Return current authenticated user.
 
 #### User Profile (`/api/users`)
-- `GET /api/users/profile` — Retrieves the logged-in user's full profile.
-- `PUT /api/users/profile` — Updates permitted profile details. Rejects attempts to alter `role`, `isActive`, `isVerified`, or `passwordHash`.
+- `GET /api/users/profile` — Retrieve full profile of logged-in user.
+- `PUT /api/users/profile` — Update permitted profile fields (role/status protected).
 
-#### Administration (`/api/admin`)
-- `GET /api/admin/dashboard` — Live count of total users, farmers, buyers, transporters, active/inactive counts, and recent sign-ups.
-- `GET /api/admin/users` — Paginated user directory with search (`?search=`), role filter (`?role=`), and status filter (`?status=`).
-- `PATCH /api/admin/users/:id/status` — Toggles or sets user `isActive` flag. Prevents admin self-deactivation.
-- `GET /api/admin/statistics` — State distribution and role composition aggregations.
+#### Product Marketplace (`/api/products`) — *Version 2*
+- `POST /api/products` — Create a crop listing (Farmer only).
+- `GET /api/products/my-products` — Get listings created by the logged-in farmer (Farmer only).
+- `GET /api/products/:id` — Get product inspection details and increment view count (Public/Auth).
+- `PUT /api/products/:id` — Update listing details (Farmer must own product).
+- `DELETE /api/products/:id` — Delete listing (Farmer must own product, or Admin).
+- `PATCH /api/products/:id/stock` — Update available quantity (Farmer only).
+- `PATCH /api/products/:id/status` — Toggle available/unavailable status (Farmer or Admin).
+- `POST /api/products/upload` — Upload multiple image files (Multer + Cloudinary/local fallback).
+
+#### Admin Operations (`/api/admin`)
+- `GET /api/admin/dashboard` — Platform telemetry (Users, Farmers, Buyers, Transporters, Products, Active counts).
+- `GET /api/admin/users` — Searchable & filterable user directory.
+- `PATCH /api/admin/users/:id/status` — Activate or deactivate user accounts.
+- `GET /api/admin/products` — Master directory of all farmer listings across India (*Version 2*).
+- `PATCH /api/admin/products/:id/status` — Deactivate inappropriate listings (*Version 2*).
+- `GET /api/admin/statistics` — State and product category distribution analytics.
 
 ---
 
-### 7. Environment Configuration (`backend/.env`)
+### 6. Environment Configuration (`backend/.env`)
 
 ```env
 PORT=5000
@@ -221,117 +179,116 @@ ADMIN_PHONE=+919876543210
 ADMIN_STATE=Karnataka
 ADMIN_DISTRICT=Bengaluru Urban
 ADMIN_VILLAGE=Bengaluru Central
+
+# Cloudinary Image Storage (Optional - Falls back to local disk storage if not set)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 ---
 
-### 8. Installation & Execution Instructions
-
-#### Prerequisites
-- Node.js (v18 or higher)
-- MongoDB running locally on port 27017 OR a MongoDB Atlas connection string in `backend/.env`
+### 7. Step-by-Step Execution Guide
 
 #### Step 1: Install Dependencies
 ```bash
-# Backend dependencies
+# Backend
 cd backend
 npm install
 
-# Frontend dependencies
+# Frontend
 cd ../frontend
 npm install
 ```
 
-#### Step 2: Seed Admin & Demo Accounts
-Run the seed script from the backend folder:
+#### Step 2: Seed Database
+```bash
+# Seed default Admin and sample accounts
+cd backend
+node scripts/seedAdmin.js
+
+# Seed sample crop listings (Wheat, Mustard, Onions, Grapes)
+node scripts/seedProducts.js
+```
+
+#### Step 3: Run Automated Test Suites
 ```bash
 cd backend
-npm run seed
-```
 
-#### Step 3: Run the Automated API Test Suite
-Run the 14-point test suite to verify all routes and RBAC guards:
-```bash
+# Run Version 1 Test Suite (14 tests)
 node scripts/testApis.js
+
+# Run Version 2 Marketplace Test Suite (17 tests)
+node scripts/testMarketplaceApis.js
 ```
 
-#### Step 4: Start the Backend Server
+#### Step 4: Run Application
 ```bash
+# Terminal 1: Backend Server (Port 5000)
 cd backend
 npm start
-# Output: FARMlink AI Server running on http://localhost:5000
-```
 
-#### Step 5: Start the Frontend Application
-In a separate terminal:
-```bash
+# Terminal 2: Frontend Dev Server (Port 5173)
 cd frontend
 npm run dev
-# Output: Local: http://localhost:5173/
 ```
 
 Open your browser at **`http://localhost:5173`**.
 
 ---
 
-### 9. Demo Login Credentials
+### 8. Demo User Credentials
 
-For quick evaluation, click the demo buttons on the `/login` page or use these credentials:
-
-| Role | Email Address | Password |
-| :--- | :--- | :--- |
-| **Administrator** | `admin@farmlink.ai` | `Admin@FarmLink2026!` |
-| **Farmer** | `farmer.ramesh@farmlink.ai` | `Password123!` |
-| **Agri Buyer** | `buyer.ananya@farmlink.ai` | `Password123!` |
-| **Transporter** | `transporter.vikram@farmlink.ai` | `Password123!` |
+| Role | Email Address | Password | Portal Features |
+| :--- | :--- | :--- | :--- |
+| **Farmer (Ramesh Patel)** | `farmer.ramesh@farmlink.ai` | `Password123!` | Create & manage produce listings, update stock, upload crop photos |
+| **Farmer (Kavita Sundaram)**| `farmer.kavita@farmlink.ai` | `Password123!` | Manage onion & table grape listings, adjust rates |
+| **Agri Buyer (Ananya Sharma)**| `buyer.ananya@farmlink.ai` | `Password123!` | Inspect farm produce provenance, commercial specs |
+| **Transporter (Vikram Singh)**| `transporter.vikram@farmlink.ai` | `Password123!` | Fleet profile, vehicle capacities |
+| **Administrator** | `admin@farmlink.ai` | `Admin@FarmLink2026!` | Master user directory & all-farmer product moderation |
 
 ---
 
-### 10. Postman Testing Guide
+### 9. Postman Testing Guide
 
-1. **Login**:
+1. **Farmer Login**:
    - `POST http://localhost:5000/api/auth/login`
-   - Body: `{"email": "admin@farmlink.ai", "password": "Admin@FarmLink2026!"}`
-   - Save the returned `token` from the response JSON.
-2. **Access Protected Route**:
-   - Set Header: `Authorization: Bearer <token>`
-   - `GET http://localhost:5000/api/admin/dashboard`
-3. **Register New Farmer**:
-   - `POST http://localhost:5000/api/auth/register`
+   - Body: `{"email": "farmer.ramesh@farmlink.ai", "password": "Password123!"}`
+   - Save returned `token`.
+2. **Create Crop Listing (`POST /api/products`)**:
+   - Header: `Authorization: Bearer <FARMER_TOKEN>`
    - Body:
      ```json
      {
-       "fullName": "Kishan Lal",
-       "email": "kishan@example.com",
-       "phone": "+919876543299",
-       "password": "Password123!",
-       "confirmPassword": "Password123!",
-       "role": "farmer",
-       "state": "Rajasthan",
-       "district": "Jaipur",
-       "village": "Amer",
-       "farmerDetails": {
-         "farmName": "Lal Agro",
-         "farmingExperience": 8,
-         "mainCropsGrown": ["Bajra", "Mustard"]
-       }
+       "cropName": "Organic Basmati Rice 1121",
+       "category": "Grains & Cereals",
+       "description": "Extra-long grain aromatic basmati rice. Sun-dried and aged 12 months.",
+       "quantity": 150,
+       "unit": "quintal",
+       "pricePerUnit": 4200,
+       "qualityGrade": "Grade A (Premium)",
+       "harvestDate": "2026-10-30",
+       "pickupLocation": "Gate 1, Golden Field Farm, Highway Rd",
+       "state": "Gujarat",
+       "district": "Mehsana",
+       "village": "Kadi",
+       "images": ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800"]
      }
      ```
-4. **Deactivate User**:
-   - `PATCH http://localhost:5000/api/admin/users/<USER_ID>/status`
+3. **Get Farmer's Listings (`GET /api/products/my-products`)**:
+   - Header: `Authorization: Bearer <FARMER_TOKEN>`
+4. **Update Available Stock (`PATCH /api/products/:id/stock`)**:
+   - Header: `Authorization: Bearer <FARMER_TOKEN>`
+   - Body: `{"quantity": 120}`
+5. **Admin Moderate Listing (`PATCH /api/admin/products/:id/status`)**:
    - Header: `Authorization: Bearer <ADMIN_TOKEN>`
-   - Body: `{"isActive": false}`
+   - Body: `{"status": "deactivated_by_admin"}`
 
 ---
 
-### 11. Known Limitations & Next Version Roadmap
+### 10. Version 3 Roadmap
 
-- **Version 1 Scope**: Focused strictly on Foundation, Authentication, Role Dashboards, Profile Management, and Admin Directory. Transaction data shows actual zero values and is clearly marked as upcoming in Version 2.
-- **Version 2 (Planned)**:
-  - Direct agricultural crop listings (Crop catalog, image uploads, price per quintal).
-  - Machine Learning Crop Price Prediction based on historical mandi data.
-  - Direct transporter booking and digital waybill generation.
-- **Version 3 (Planned)**:
-  - AI-Powered Buyer Matchmaker (recommending top institutional buyers).
-  - Farmer Profit Calculator with input cost and market realization simulations.
-  - Smart route optimization for multi-farm logistics collection.
+- **Direct Buyer Contracting & RFQs**: Buyers can initiate escrow-backed purchase agreements for listed crops.
+- **ML Crop Price Forecasting**: Machine learning models predicting mandi crop rates over a 30-day horizon.
+- **Smart Logistics Dispatch**: Automated vehicle load matching and digital e-Waybill generation.
+- **AI Buyer Matching**: Intelligent matchmaking connecting growers with institutional bulk procurement buyers.

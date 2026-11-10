@@ -1,4 +1,5 @@
 const { errorResponse } = require('../utils/apiResponse');
+const { PRODUCT_CATEGORIES, QUALITY_GRADES, MEASUREMENT_UNITS } = require('../models/Product');
 
 // Email regex
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,8 +122,154 @@ const validateProfileUpdate = (req, res, next) => {
   next();
 };
 
+/**
+ * Validate product creation input
+ */
+const validateProductInput = (req, res, next) => {
+  const {
+    cropName,
+    category,
+    description,
+    quantity,
+    unit,
+    pricePerUnit,
+    qualityGrade,
+    harvestDate,
+    pickupLocation,
+    state,
+    district,
+    village,
+    images
+  } = req.body;
+
+  const errors = {};
+
+  if (!cropName || typeof cropName !== 'string' || cropName.trim().length < 2) {
+    errors.cropName = 'Crop name is required (minimum 2 characters)';
+  }
+
+  if (!category || !PRODUCT_CATEGORIES.includes(category)) {
+    errors.category = `Valid category is required (${PRODUCT_CATEGORIES.join(', ')})`;
+  }
+
+  if (!description || typeof description !== 'string' || description.trim().length < 10) {
+    errors.description = 'Detailed description is required (minimum 10 characters)';
+  }
+
+  const numQuantity = Number(quantity);
+  if (quantity === undefined || isNaN(numQuantity) || numQuantity <= 0) {
+    errors.quantity = 'Available quantity must be a positive number greater than 0';
+  }
+
+  if (!unit || !MEASUREMENT_UNITS.includes(unit.toLowerCase())) {
+    errors.unit = `Unit must be one of: ${MEASUREMENT_UNITS.join(', ')}`;
+  }
+
+  const numPrice = Number(pricePerUnit);
+  if (pricePerUnit === undefined || isNaN(numPrice) || numPrice <= 0) {
+    errors.pricePerUnit = 'Price per unit must be a positive number greater than 0';
+  }
+
+  if (!qualityGrade || !QUALITY_GRADES.includes(qualityGrade)) {
+    errors.qualityGrade = `Quality grade must be one of: ${QUALITY_GRADES.join(', ')}`;
+  }
+
+  if (!harvestDate || isNaN(new Date(harvestDate).getTime())) {
+    errors.harvestDate = 'A valid harvest date is required';
+  }
+
+  if (!pickupLocation || typeof pickupLocation !== 'string' || pickupLocation.trim().length === 0) {
+    errors.pickupLocation = 'Farm pickup location is required';
+  }
+
+  if (!state || typeof state !== 'string' || state.trim().length === 0) {
+    errors.state = 'State is required';
+  }
+
+  if (!district || typeof district !== 'string' || district.trim().length === 0) {
+    errors.district = 'District is required';
+  }
+
+  if (!village || typeof village !== 'string' || village.trim().length === 0) {
+    errors.village = 'Village or city is required';
+  }
+
+  // Combine images from body and/or uploaded files
+  let allImages = [];
+  if (req.uploadedImageUrls && req.uploadedImageUrls.length > 0) {
+    allImages = allImages.concat(req.uploadedImageUrls);
+  }
+  if (images) {
+    if (Array.isArray(images)) {
+      allImages = allImages.concat(images);
+    } else if (typeof images === 'string') {
+      try {
+        const parsed = JSON.parse(images);
+        if (Array.isArray(parsed)) allImages = allImages.concat(parsed);
+        else allImages.push(images);
+      } catch (e) {
+        allImages.push(images);
+      }
+    }
+  }
+
+  allImages = allImages.filter(Boolean);
+
+  if (allImages.length === 0) {
+    errors.images = 'At least one product image is required';
+  } else {
+    req.body.images = allImages;
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return errorResponse(res, 'Validation failed. Please correct product details.', 422, errors);
+  }
+
+  // Normalize fields
+  req.body.quantity = numQuantity;
+  req.body.pricePerUnit = numPrice;
+  req.body.unit = unit.toLowerCase();
+  next();
+};
+
+/**
+ * Validate stock update
+ */
+const validateStockUpdate = (req, res, next) => {
+  const { quantity } = req.body;
+  const numQuantity = Number(quantity);
+
+  if (quantity === undefined || isNaN(numQuantity) || numQuantity < 0) {
+    return errorResponse(res, 'Quantity must be a non-negative number (0 or higher)', 422, {
+      quantity: 'Invalid quantity'
+    });
+  }
+
+  req.body.quantity = numQuantity;
+  next();
+};
+
+/**
+ * Validate status update
+ */
+const validateStatusUpdate = (req, res, next) => {
+  const { status } = req.body;
+  const allowedStatuses = ['available', 'unavailable', 'deactivated_by_admin'];
+
+  if (!status || !allowedStatuses.includes(status)) {
+    return errorResponse(res, `Status must be one of: ${allowedStatuses.join(', ')}`, 422, {
+      status: 'Invalid status'
+    });
+  }
+
+  next();
+};
+
 module.exports = {
   validateRegister,
   validateLogin,
-  validateProfileUpdate
+  validateProfileUpdate,
+  validateProductInput,
+  validateStockUpdate,
+  validateStatusUpdate
 };

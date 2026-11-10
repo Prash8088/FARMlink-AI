@@ -16,6 +16,16 @@ export const adminService = {
     return response.data;
   },
 
+  async getAllProducts(params = {}) {
+    const response = await api.get('/admin/products', { params });
+    return response.data;
+  },
+
+  async updateProductStatus(productId, status) {
+    const response = await api.patch(`/admin/products/${productId}/status`, { status });
+    return response.data;
+  },
+
   async getStatistics() {
     const response = await api.get('/admin/statistics');
     return response.data;

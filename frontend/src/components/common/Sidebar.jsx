@@ -37,10 +37,10 @@ export const Sidebar = () => {
       case 'farmer':
         return [
           { label: 'Overview', path: '/dashboard/farmer', icon: LayoutDashboard },
+          { label: 'Produce Listings', path: '/dashboard/farmer/products', icon: Package, badge: 'V2 Live' },
           { label: 'Farm Profile', path: '/profile', icon: Tractor },
-          { label: 'Produce Listings', path: '#', icon: Package, badge: 'V2' },
-          { label: 'Crop Price Forecast', path: '#', icon: TrendingUp, badge: 'V2' },
-          { label: 'Transport Booking', path: '#', icon: Truck, badge: 'V2' },
+          { label: 'Crop Price Forecast', path: '#', icon: TrendingUp, badge: 'V3' },
+          { label: 'Transport Booking', path: '#', icon: Truck, badge: 'V3' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
@@ -48,9 +48,9 @@ export const Sidebar = () => {
         return [
           { label: 'Overview', path: '/dashboard/buyer', icon: LayoutDashboard },
           { label: 'Business Profile', path: '/profile', icon: Building2 },
-          { label: 'Agri Sourcing', path: '#', icon: ShoppingBag, badge: 'V2' },
-          { label: 'Order Contracts', path: '#', icon: Layers, badge: 'V2' },
-          { label: 'Logistics Tracker', path: '#', icon: Truck, badge: 'V2' },
+          { label: 'Agri Sourcing', path: '#', icon: ShoppingBag, badge: 'V3' },
+          { label: 'Order Contracts', path: '#', icon: Layers, badge: 'V3' },
+          { label: 'Logistics Tracker', path: '#', icon: Truck, badge: 'V3' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
@@ -58,14 +58,15 @@ export const Sidebar = () => {
         return [
           { label: 'Overview', path: '/dashboard/transporter', icon: LayoutDashboard },
           { label: 'Vehicle Profile', path: '/profile', icon: Truck },
-          { label: 'Freight Requests', path: '#', icon: Package, badge: 'V2' },
-          { label: 'Trip Management', path: '#', icon: Layers, badge: 'V2' },
+          { label: 'Freight Requests', path: '#', icon: Package, badge: 'V3' },
+          { label: 'Trip Management', path: '#', icon: Layers, badge: 'V3' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
       case 'admin':
         return [
           { label: 'Dashboard Overview', path: '/dashboard/admin', icon: LayoutDashboard },
+          { label: 'Marketplace Directory', path: '/dashboard/admin?tab=products', icon: Package, badge: 'V2' },
           { label: 'User Directory', path: '/dashboard/admin?tab=users', icon: Users },
           { label: 'Platform Statistics', path: '/dashboard/admin?tab=stats', icon: TrendingUp },
           { label: 'Administrator Profile', path: '/profile', icon: ShieldCheck },
@@ -117,7 +118,7 @@ export const Sidebar = () => {
               <div
                 key={idx}
                 className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-500 cursor-not-allowed group opacity-75"
-                title="This module will be activated in Version 2"
+                title="This module will be activated in Version 3"
               >
                 <div className="flex items-center gap-3">
                   <Icon className="w-4 h-4 text-slate-600" />
@@ -151,7 +152,14 @@ export const Sidebar = () => {
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                     <span>{item.label}</span>
                   </div>
-                  <ChevronRight className={`w-3.5 h-3.5 opacity-50 ${isActive ? 'opacity-100' : ''}`} />
+                  <div className="flex items-center gap-1.5">
+                    {item.badge && !isActive && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-900/80 text-emerald-300 border border-emerald-700/60">
+                        {item.badge}
+                      </span>
+                    )}
+                    <ChevronRight className={`w-3.5 h-3.5 opacity-50 ${isActive ? 'opacity-100' : ''}`} />
+                  </div>
                 </>
               )}
             </NavLink>

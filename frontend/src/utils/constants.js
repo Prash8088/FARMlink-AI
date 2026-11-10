@@ -71,14 +71,29 @@ export const BUYER_TYPES = [
   'Local Mandi Commission Agent'
 ];
 
-export const CROP_CATEGORIES = [
-  'Grains & Cereals (Wheat, Rice, Maize)',
-  'Pulses & Lentils (Gram, Tur, Moong)',
-  'Oilseeds (Mustard, Groundnut, Soybean)',
-  'Fresh Vegetables & Greens',
-  'Horticulture & Fresh Fruits',
+export const PRODUCT_CATEGORIES = [
+  'Grains & Cereals',
+  'Pulses & Lentils',
+  'Oilseeds',
+  'Fresh Vegetables',
+  'Horticulture & Fruits',
   'Spices & Condiments',
-  'Cash Crops (Cotton, Sugarcane)'
+  'Cash Crops',
+  'Other'
+];
+
+export const CROP_CATEGORIES = PRODUCT_CATEGORIES;
+
+export const QUALITY_GRADES = [
+  'Grade A (Premium)',
+  'Grade B (Standard)',
+  'Grade C (Fair/Processing)'
+];
+
+export const MEASUREMENT_UNITS = [
+  { value: 'quintal', label: 'Quintal (100 kg)', abbr: 'qtl' },
+  { value: 'kg', label: 'Kilogram (kg)', abbr: 'kg' },
+  { value: 'ton', label: 'Metric Ton (1,000 kg)', abbr: 'MT' }
 ];
 
 export const VEHICLE_TYPES = [
