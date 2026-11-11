@@ -17,7 +17,9 @@ import {
   ChevronRight,
   ShieldCheck,
   Building2,
-  Tractor
+  Tractor,
+  Store,
+  Inbox
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -37,20 +39,21 @@ export const Sidebar = () => {
       case 'farmer':
         return [
           { label: 'Overview', path: '/dashboard/farmer', icon: LayoutDashboard },
-          { label: 'Produce Listings', path: '/dashboard/farmer/products', icon: Package, badge: 'V2 Live' },
+          { label: 'Produce Listings', path: '/dashboard/farmer/products', icon: Package, badge: 'Catalog' },
+          { label: 'Incoming Orders', path: '/dashboard/farmer/orders', icon: Inbox, badge: 'V3 Live' },
           { label: 'Farm Profile', path: '/profile', icon: Tractor },
-          { label: 'Crop Price Forecast', path: '#', icon: TrendingUp, badge: 'V3' },
-          { label: 'Transport Booking', path: '#', icon: Truck, badge: 'V3' },
+          { label: 'Crop Price Forecast', path: '#', icon: TrendingUp, badge: 'V4' },
+          { label: 'Transport Booking', path: '#', icon: Truck, badge: 'V4' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
       case 'buyer':
         return [
           { label: 'Overview', path: '/dashboard/buyer', icon: LayoutDashboard },
+          { label: 'Produce Marketplace', path: '/marketplace', icon: Store, badge: 'V3 Live' },
+          { label: 'My Orders & Negotiations', path: '/dashboard/buyer/orders', icon: ShoppingBag, badge: 'V3 Live' },
           { label: 'Business Profile', path: '/profile', icon: Building2 },
-          { label: 'Agri Sourcing', path: '#', icon: ShoppingBag, badge: 'V3' },
-          { label: 'Order Contracts', path: '#', icon: Layers, badge: 'V3' },
-          { label: 'Logistics Tracker', path: '#', icon: Truck, badge: 'V3' },
+          { label: 'Logistics Tracker', path: '#', icon: Truck, badge: 'V4' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
@@ -58,15 +61,16 @@ export const Sidebar = () => {
         return [
           { label: 'Overview', path: '/dashboard/transporter', icon: LayoutDashboard },
           { label: 'Vehicle Profile', path: '/profile', icon: Truck },
-          { label: 'Freight Requests', path: '#', icon: Package, badge: 'V3' },
-          { label: 'Trip Management', path: '#', icon: Layers, badge: 'V3' },
+          { label: 'Freight Requests', path: '#', icon: Package, badge: 'V4' },
+          { label: 'Trip Management', path: '#', icon: Layers, badge: 'V4' },
           { label: 'Settings', path: '/settings', icon: Settings }
         ];
 
       case 'admin':
         return [
           { label: 'Dashboard Overview', path: '/dashboard/admin', icon: LayoutDashboard },
-          { label: 'Marketplace Directory', path: '/dashboard/admin?tab=products', icon: Package, badge: 'V2' },
+          { label: 'Orders & Contracts', path: '/dashboard/admin/orders', icon: ShoppingBag, badge: 'V3 Live' },
+          { label: 'Marketplace Directory', path: '/dashboard/admin?tab=products', icon: Package },
           { label: 'User Directory', path: '/dashboard/admin?tab=users', icon: Users },
           { label: 'Platform Statistics', path: '/dashboard/admin?tab=stats', icon: TrendingUp },
           { label: 'Administrator Profile', path: '/profile', icon: ShieldCheck },

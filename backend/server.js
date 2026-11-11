@@ -11,6 +11,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productRoutes = require('./routes/productRoutes');
+const marketplaceRoutes = require('./routes/marketplaceRoutes');
+const orderRoutes = require('./routes/orderRoutes');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -70,9 +72,13 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'FARMlink AI API',
-    version: '2.0.0',
+    version: '3.0.0',
     environment: process.env.NODE_ENV || 'development',
-    modules: ['Foundation & RBAC', 'Farmer Marketplace (V2)']
+    modules: [
+      'Foundation & RBAC (V1)',
+      'Farmer Marketplace (V2)',
+      'Buyer Marketplace, Price Negotiation & Orders (V3)'
+    ]
   });
 });
 
@@ -84,6 +90,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Error Handling Middlewares
 app.use(notFound);

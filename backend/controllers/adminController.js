@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { Product } = require('../models/Product');
+const { Order } = require('../models/Order');
 const { successResponse, errorResponse } = require('../utils/apiResponse');
 
 /**
@@ -19,7 +20,9 @@ const getDashboardStats = async (req, res, next) => {
       inactiveUsers,
       recentUsers,
       totalProducts,
-      availableProducts
+      availableProducts,
+      totalOrders,
+      confirmedOrders
     ] = await Promise.all([
       User.countDocuments({}),
       User.countDocuments({ role: 'farmer' }),
@@ -33,7 +36,9 @@ const getDashboardStats = async (req, res, next) => {
         .limit(8)
         .select('fullName email phone role state district isActive isVerified createdAt'),
       Product.countDocuments({}),
-      Product.countDocuments({ status: 'available' })
+      Product.countDocuments({ status: 'available' }),
+      Order.countDocuments({}),
+      Order.countDocuments({ status: 'CONFIRMED' })
     ]);
 
     const stats = {
@@ -46,6 +51,8 @@ const getDashboardStats = async (req, res, next) => {
       inactiveUsers,
       totalProducts,
       availableProducts,
+      totalOrders,
+      confirmedOrders,
       recentRegistrations: recentUsers
     };
 

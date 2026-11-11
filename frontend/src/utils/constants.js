@@ -104,3 +104,49 @@ export const VEHICLE_TYPES = [
   'Refrigerated Cold Chain Container',
   'Open High-Deck Tractor Trailer'
 ];
+
+export const ORDER_STATUS_CONFIG = {
+  PENDING: {
+    label: 'Pending Response',
+    badge: 'bg-amber-100 text-amber-800 border-amber-200',
+    dot: 'bg-amber-500',
+    description: 'Purchase request sent. Awaiting farmer response.'
+  },
+  NEGOTIATING: {
+    label: 'In Negotiation',
+    badge: 'bg-blue-100 text-blue-800 border-blue-200',
+    dot: 'bg-blue-500',
+    description: 'Counter-offers in progress between parties.'
+  },
+  ACCEPTED: {
+    label: 'Terms Agreed',
+    badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    dot: 'bg-indigo-500',
+    description: 'Price and quantity agreed. Ready for buyer confirmation.'
+  },
+  CONFIRMED: {
+    label: 'Order Confirmed',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    dot: 'bg-emerald-500',
+    description: 'Order confirmed! Stock atomically reserved.'
+  },
+  COMPLETED: {
+    label: 'Completed',
+    badge: 'bg-green-100 text-green-800 border-green-200',
+    dot: 'bg-green-600',
+    description: 'Consignment fulfilled and marked completed.'
+  },
+  REJECTED: {
+    label: 'Declined',
+    badge: 'bg-red-100 text-red-800 border-red-200',
+    dot: 'bg-red-500',
+    description: 'Negotiation rejected and closed.'
+  },
+  CANCELLED: {
+    label: 'Cancelled',
+    badge: 'bg-slate-100 text-slate-700 border-slate-300',
+    dot: 'bg-slate-500',
+    description: 'Order cancelled. Reserved stock restored.'
+  }
+};
+

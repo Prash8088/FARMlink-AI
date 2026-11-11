@@ -8,6 +8,7 @@ const {
   updateProductStatusByAdmin,
   getStatistics
 } = require('../controllers/adminController');
+const { getAdminOrders } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // All routes require authentication and admin role
@@ -19,6 +20,7 @@ router.get('/users', getAllUsers);
 router.patch('/users/:id/status', updateUserStatus);
 router.get('/products', getAllProducts);
 router.patch('/products/:id/status', updateProductStatusByAdmin);
+router.get('/orders', getAdminOrders);
 router.get('/statistics', getStatistics);
 
 module.exports = router;

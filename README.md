@@ -1,5 +1,5 @@
 # FARMlink AI – Intelligent Agricultural Marketplace
-## Version 2: Farmer Marketplace Module & Production Foundation
+## Version 3: Buyer Marketplace, Price Negotiation & Order Management
 
 [![Node.js](https://img.shields.io/badge/Node.js-20.x-green.svg)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express-4.21-lightgrey.svg)](https://expressjs.com/)
@@ -7,7 +7,7 @@
 [![React](https://img.shields.io/badge/React-18.3-blue.svg)](https://react.dev/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4-teal.svg)](https://tailwindcss.com/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-purple.svg)](https://vitejs.dev/)
-[![Version](https://img.shields.io/badge/FARMlink%20AI-v2.0.0-emerald.svg)](https://github.com)
+[![Version](https://img.shields.io/badge/FARMlink%20AI-v3.0.0-emerald.svg)](https://github.com)
 
 ---
 
@@ -18,7 +18,8 @@
 By eliminating predatory middlemen, FARMlink AI restores price transparency, guarantees origin provenance for buyers, and optimizes freight transport directly from farm gates.
 
 - **Version 1 (Completed)**: Core Foundation, Authentication (JWT in HTTP-only Cookie + Bearer), Role-Based Access Control (`farmer`, `buyer`, `transporter`, `admin`), User Profile Management, and 4 Role Dashboards.
-- **Version 2 (Active & Complete)**: **Farmer Marketplace Module** — enables authenticated farmers to create, publish, manage, edit, stock-control, and delete agricultural produce listings with multi-image uploads (Cloudinary + local static fallback) and admin directory governance.
+- **Version 2 (Completed)**: **Farmer Marketplace Module** — enables authenticated farmers to create, publish, manage, edit, stock-control, and delete agricultural produce listings with multi-image uploads (Cloudinary + local static fallback) and admin directory governance.
+- **Version 3 (Active & Complete)**: **Buyer Marketplace, Price Negotiation & Order Management** — enables buyers to discover active produce, submit purchase requests, engage in structured bidirectional price/quantity negotiations with farmers, review complete audit trails, and confirm orders with **atomic stock reservation** and automatic restoration upon cancellation.
 
 ---
 
@@ -37,54 +38,83 @@ By eliminating predatory middlemen, FARMlink AI restores price transparency, gua
   - Multer & Cloudinary (dual-mode image storage with local fallback)
   - Express middleware: `helmet`, `morgan`, `cors`, `cookie-parser`, `express-rate-limit`
 - **Database**:
-  - MongoDB (Local / MongoDB Atlas)
-  - Mongoose 8 ODM with embedded schemas, compound indexes, and text search
+  - MongoDB (Local `127.0.0.1:27017` / MongoDB Atlas)
+  - Mongoose 8 ODM with embedded schemas, compound indexes, atomic update operators (`$inc`, `$gte`), and text search
 
 ---
 
-### 3. Version 2 Features: Farmer Marketplace Module
+### 3. Version 3 Features
 
-1. **Add Product Listing**:
-   - Crop name, variety, and standard agricultural category (*Grains & Cereals, Pulses & Lentils, Oilseeds, Fresh Vegetables, Horticulture & Fruits, Spices, Cash Crops*).
-   - Rich harvest description.
-   - Multiple crop inspection photographs (supported via drag-and-drop file upload or image URLs).
-   - Available quantity and unit (`kg`, `quintal`, `ton`).
-   - Price per unit in INR (₹) with real-time lot valuation calculator ($Quantity \times Price$).
-   - Quality grade classification (*Grade A Premium, Grade B Standard, Grade C Fair/Processing*).
-   - Harvest date picker.
-   - Farm pickup landmark, state, district, and village coordinates (auto-filled from farmer profile).
-2. **Product Management**:
-   - Dedicated farmer produce catalogue (`/dashboard/farmer/products`).
-   - Quick stock adjustment with numeric modal stepper.
-   - Instant status toggle between `Available` (live to buyers) and `Unavailable` (paused/reserved).
-   - Edit product specs (`/dashboard/farmer/products/:id/edit`).
-   - Delete product with safety confirmation modal.
-   - Search by crop name/description, filter by category/status, and sort by price, quantity, or date.
-3. **Image Upload (Dual-Mode Cloud/Local)**:
-   - Multer validation: rejects non-image formats; limits files to 5MB and 5 images per product.
-   - Cloudinary integration: when `CLOUDINARY_*` credentials are set in `.env`, images upload to Cloudinary.
-   - Local fallback: when Cloudinary is unconfigured or in offline development, images are saved in `backend/uploads/products/` and served statically via Express (`/uploads/products/*`).
-   - URLs are stored in MongoDB; raw image binaries are never stored inside MongoDB documents.
-4. **Product Detail View**:
-   - Public and authenticated inspection page (`/dashboard/farmer/products/:id` & `/products/:id`).
-   - Interactive image carousel/thumbnail selector.
-   - Farm origin & provenance card (farmer name, phone, district, state, pickup gate landmark).
-   - Views counter incremented automatically on each inspection.
-5. **Admin Marketplace Directory**:
-   - Master product table in Admin Console (`/dashboard/admin?tab=products`).
-   - View all listings across all farmers in India.
-   - Search by crop or location, filter by category and status.
-   - Deactivate inappropriate listings (`deactivated_by_admin`) or restore them with one click.
-   - Category-wise crop distribution telemetry in statistics.
+#### A. Buyer Marketplace (`/marketplace`)
+- **Active Produce Feed**: Queries only active, available listings with stock $> 0$.
+- **Full-Text & Keyword Search**: Search across crop name, category, description, district, and state.
+- **Filter Bar & Detailed Filter Drawer**:
+  - Filter by agricultural category (Grains, Pulses, Oilseeds, Vegetables, Fruits, Spices, Cash Crops).
+  - Filter by Indian State and District.
+  - Filter by Quality Grade (*Grade A Premium, Grade B Standard, Grade C Fair*).
+  - Filter by Minimum Available Stock.
+  - Filter by Price Range (Min/Max ₹).
+- **Multi-Sort Options**: Sort by Newest Listings, Price: Low to High, Price: High to Low, or Largest Available Stock.
+- **Marketplace Cards**: Cover photo, quality grade badge, crop name, farmer name, farm location, available stock with unit, asking rate, and instant "View Details & Negotiate" action.
+
+#### B. Product Detail & Purchase Request (`/marketplace/:id`)
+- **Multi-Image Photo Gallery**: Carousel and thumbnail selector.
+- **Detailed Specifications**: Crop variety, harvest date, pickup hub, quality grade, lot description, and farm provenance.
+- **Farmer Profile Card**: Direct provenance details, experience, mandi hub, phone, and email.
+- **Interactive Procurement Request Form**:
+  - Required quantity input with automatic validation ($Quantity \le AvailableStock$).
+  - Offer price per unit (defaults to asking price, editable for negotiation).
+  - Live order value calculator: $Quantity \times OfferPrice = TotalAmount$.
+  - Delivery location (pre-filled from buyer profile: street address, district, state, pincode).
+  - Optional instructions/message to farmer.
+
+#### C. Structured Price & Quantity Negotiation
+1. **Initial Bid**: Buyer submits a purchase request with quantity, proposed price per unit, delivery location, and message. Order status initializes to `PENDING` with negotiation status `BUYER_OFFER`.
+2. **Farmer Notification & Counter-Offer**: The farmer receives the bid on their dashboard (`/dashboard/farmer/orders`). The farmer can **accept**, **reject**, or submit a **counter-offer** with a revised price, quantity, and justification message (`POST /api/orders/:id/offers`). Order status moves to `NEGOTIATING`.
+3. **Buyer Counter-Offer**: The buyer can review the farmer's proposal and either accept, reject, or submit a counter-counter offer.
+4. **Negotiation Audit Timeline**: Every offer and counter-offer is preserved in the order's `offers` array with sender ID, role, price, quantity, timestamp, and status.
+5. **Mutual Agreement**: When either party accepts an offer, the agreed price and agreed quantity are locked into `agreedPrice`, `agreedQuantity`, `totalAmount`, and the order status advances to `ACCEPTED` (`negotiationStatus: 'AGREED'`).
+6. **Security & Anti-Self-Acceptance**: Users cannot accept or reject their own offers; only the counterparty can respond. Third-party users receive `403 Forbidden`.
+
+#### D. Atomic Stock Reservation & Order Lifecycle
+- **Explicit Buyer Confirmation (`PATCH /api/orders/:id/confirm`)**:
+  - An agreed contract is not confirmed until the buyer explicitly confirms it.
+  - Uses an atomic check-and-decrement operation:
+    ```javascript
+    Product.findOneAndUpdate(
+      { _id: order.productId, quantity: { $gte: order.agreedQuantity } },
+      { $inc: { quantity: -order.agreedQuantity } },
+      { new: true }
+    );
+    ```
+  - **Overselling Prevention**: If another order consumed the stock in the meantime, confirmation is safely rejected. If remaining stock hits 0, product availability is toggled to `unavailable`.
+  - Order status advances to `CONFIRMED`.
+- **Atomic Stock Restoration upon Cancellation (`PATCH /api/orders/:id/cancel`)**:
+  - If a `CONFIRMED` order is cancelled by the buyer, farmer, or admin, the reserved stock is atomically restored to the product listing:
+    ```javascript
+    Product.findByIdAndUpdate(order.productId, {
+      $inc: { quantity: order.agreedQuantity },
+      status: 'available'
+    });
+    ```
+- **Order Completion (`PATCH /api/orders/:id/complete`)**:
+  - Once the consignment is delivered and verified at the warehouse, order status moves to `COMPLETED`.
+
+#### E. Dashboards & Console Extensions
+- **Buyer Dashboard (`/dashboard/buyer`)**: Live procurement metrics (Total Orders, In Negotiation, Confirmed, Total Spend), recent purchase orders table, and direct "Browse Marketplace" banner.
+- **Buyer Orders Page (`/dashboard/buyer/orders`)**: Filter by status (All, Negotiations, Confirmed, Completed, Cancelled) with direct links to the negotiation thread.
+- **Farmer Dashboard (`/dashboard/farmer`)**: Live sales metrics, incoming purchase bids, confirmed orders, and total produce revenue.
+- **Farmer Orders Page (`/dashboard/farmer/orders`)**: Dedicated console for incoming purchase requests with quick "Review & Respond" actions.
+- **Admin Orders & Audit (`/dashboard/admin/orders`)**: Platform-wide transaction audit, search by `orderNumber`, status filters, and telemetry.
 
 ---
 
-### 4. Database Schema
+### 4. Database Models
 
-#### A. User Schema (`models/User.js`)
+#### A. User Schema (`backend/models/User.js`)
 Stores authentication, credentials, and role-specific subdocuments (`farmerDetails`, `buyerDetails`, `transporterDetails`).
 
-#### B. Product Schema (`models/Product.js`)
+#### B. Product Schema (`backend/models/Product.js`)
 ```javascript
 {
   farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -98,197 +128,167 @@ Stores authentication, credentials, and role-specific subdocuments (`farmerDetai
     ],
     index: true
   },
-  description: { type: String, required: true, trim: true },
-  images: { type: [String], required: true }, // Array of hosted URLs (Cloudinary / local)
+  description: { type: String, required: true },
+  images: { type: [String], required: true },
   quantity: { type: Number, required: true, min: 0 },
   unit: { type: String, required: true, enum: ['kg', 'quintal', 'ton'], default: 'quintal' },
   pricePerUnit: { type: Number, required: true, min: 0 },
   qualityGrade: {
     type: String,
     required: true,
-    enum: ['Grade A (Premium)', 'Grade B (Standard)', 'Grade C (Fair/Processing)']
+    enum: ['Grade A (Premium)', 'Grade B (Standard)', 'Grade C (Fair/Processing)'],
+    default: 'Grade A (Premium)'
   },
   harvestDate: { type: Date, required: true },
-  pickupLocation: { type: String, required: true, trim: true },
-  state: { type: String, required: true, trim: true },
-  district: { type: String, required: true, trim: true },
-  village: { type: String, required: true, trim: true },
+  pickupLocation: { type: String, required: true },
+  state: { type: String, required: true },
+  district: { type: String, required: true },
+  village: { type: String, required: true },
+  status: { type: String, enum: ['available', 'unavailable', 'deactivated_by_admin'], default: 'available', index: true },
+  isActive: { type: Boolean, default: true, index: true },
+  viewsCount: { type: Number, default: 0 }
+}
+```
+
+#### C. Order & Negotiation Schema (`backend/models/Order.js`)
+```javascript
+{
+  orderNumber: { type: String, unique: true, index: true }, // Auto-generated: ORD-XXXXXX-XXXX
+  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+  requestedQuantity: { type: Number, required: true, min: 0.01 },
+  agreedQuantity: { type: Number, default: null },
+  initialOfferPrice: { type: Number, required: true, min: 0.01 },
+  agreedPrice: { type: Number, default: null },
+  totalAmount: { type: Number, default: 0 },
+  unit: { type: String, required: true, default: 'quintal' },
+  deliveryLocation: {
+    address: { type: String, required: true },
+    village: { type: String },
+    district: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String }
+  },
+  buyerMessage: { type: String, default: '' },
   status: {
     type: String,
-    enum: ['available', 'unavailable', 'deactivated_by_admin'],
-    default: 'available',
+    enum: ['PENDING', 'NEGOTIATING', 'ACCEPTED', 'CONFIRMED', 'REJECTED', 'CANCELLED', 'COMPLETED'],
+    default: 'PENDING',
     index: true
   },
-  isActive: { type: Boolean, default: true, index: true },
-  viewsCount: { type: Number, default: 0 },
-  createdAt: Date,
-  updatedAt: Date
+  negotiationStatus: {
+    type: String,
+    enum: ['BUYER_OFFER', 'FARMER_COUNTER', 'BUYER_COUNTER', 'AGREED', 'REJECTED', 'CANCELLED'],
+    default: 'BUYER_OFFER',
+    index: true
+  },
+  offers: [
+    {
+      senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      senderRole: { type: String, enum: ['buyer', 'farmer'], required: true },
+      offeredPrice: { type: Number, required: true },
+      offeredQuantity: { type: Number, required: true },
+      message: { type: String, default: '' },
+      status: { type: String, enum: ['pending', 'countered', 'accepted', 'rejected'], default: 'pending' },
+      createdAt: { type: Date, default: Date.now }
+    }
+  ],
+  confirmedAt: { type: Date },
+  cancelledAt: { type: Date },
+  cancellationReason: { type: String, default: '' },
+  cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  completedAt: { type: Date }
 }
 ```
 
 ---
 
-### 5. Backend REST API Endpoints
+### 5. API Reference
 
-#### Authentication (`/api/auth`)
-- `POST /api/auth/register` — Register Farmer, Buyer, or Transporter (Admin restricted).
-- `POST /api/auth/login` — Sign in, set HTTP-only cookie, and return JWT.
-- `POST /api/auth/logout` — Invalidate session and clear auth cookie.
-- `GET /api/auth/me` — Return current authenticated user.
+#### A. Buyer Marketplace Endpoints (`/api/marketplace`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/marketplace/products` | Authenticated | Browse active produce with search, filters (category, state, district, price, quantity), sorting, and pagination |
+| `GET` | `/api/marketplace/products/:id` | Authenticated | Single product details with farmer contact and provenance |
+| `GET` | `/api/marketplace/filters` | Authenticated | Distinct filter options (categories, states, districts, price ranges) |
 
-#### User Profile (`/api/users`)
-- `GET /api/users/profile` — Retrieve full profile of logged-in user.
-- `PUT /api/users/profile` — Update permitted profile fields (role/status protected).
+#### B. Order & Negotiation Endpoints (`/api/orders`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `POST` | `/api/orders` | Buyer only | Submit purchase request & initial offer |
+| `GET` | `/api/orders/buyer` | Buyer only | Get all purchase orders and negotiation threads for buyer |
+| `GET` | `/api/orders/farmer` | Farmer only | Get incoming purchase requests and negotiations for farmer |
+| `GET` | `/api/orders/:id` | Buyer / Farmer / Admin | Get full order details and complete negotiation history |
+| `POST` | `/api/orders/:id/offers` | Buyer / Farmer | Submit counter-offer in active negotiation |
+| `PATCH` | `/api/orders/:id/offers/:offerId/respond` | Counterparty only | Accept (`accept`) or decline (`reject`) an offer |
+| `PATCH` | `/api/orders/:id/confirm` | Buyer only | **Confirm agreed order & atomically reserve stock** |
+| `PATCH` | `/api/orders/:id/cancel` | Buyer / Farmer / Admin | Cancel order (**atomically restores stock if confirmed**) |
+| `PATCH` | `/api/orders/:id/complete` | Buyer / Farmer / Admin | Mark order as fulfilled and completed |
 
-#### Product Marketplace (`/api/products`) — *Version 2*
-- `POST /api/products` — Create a crop listing (Farmer only).
-- `GET /api/products/my-products` — Get listings created by the logged-in farmer (Farmer only).
-- `GET /api/products/:id` — Get product inspection details and increment view count (Public/Auth).
-- `PUT /api/products/:id` — Update listing details (Farmer must own product).
-- `DELETE /api/products/:id` — Delete listing (Farmer must own product, or Admin).
-- `PATCH /api/products/:id/stock` — Update available quantity (Farmer only).
-- `PATCH /api/products/:id/status` — Toggle available/unavailable status (Farmer or Admin).
-- `POST /api/products/upload` — Upload multiple image files (Multer + Cloudinary/local fallback).
-
-#### Admin Operations (`/api/admin`)
-- `GET /api/admin/dashboard` — Platform telemetry (Users, Farmers, Buyers, Transporters, Products, Active counts).
-- `GET /api/admin/users` — Searchable & filterable user directory.
-- `PATCH /api/admin/users/:id/status` — Activate or deactivate user accounts.
-- `GET /api/admin/products` — Master directory of all farmer listings across India (*Version 2*).
-- `PATCH /api/admin/products/:id/status` — Deactivate inappropriate listings (*Version 2*).
-- `GET /api/admin/statistics` — State and product category distribution analytics.
-
----
-
-### 6. Environment Configuration (`backend/.env`)
-
-```env
-PORT=5000
-NODE_ENV=development
-CLIENT_URL=http://localhost:5173
-MONGODB_URI=mongodb://127.0.0.1:27017/farmlink_ai
-JWT_SECRET=farmlink_ai_super_secret_jwt_key_2026_secure_random
-JWT_EXPIRE=7d
-COOKIE_EXPIRE=7
-
-# Default Administrator Seed Credentials
-ADMIN_NAME=Platform Administrator
-ADMIN_EMAIL=admin@farmlink.ai
-ADMIN_PASSWORD=Admin@FarmLink2026!
-ADMIN_PHONE=+919876543210
-ADMIN_STATE=Karnataka
-ADMIN_DISTRICT=Bengaluru Urban
-ADMIN_VILLAGE=Bengaluru Central
-
-# Cloudinary Image Storage (Optional - Falls back to local disk storage if not set)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
+#### C. Admin Governance (`/api/admin`)
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| `GET` | `/api/admin/orders` | Admin only | Audit all platform transactions and contracts |
+| `GET` | `/api/admin/dashboard` | Admin only | Platform counts (users, products, orders, volume) |
+| `GET` | `/api/admin/products` | Admin only | View all listings across all farmers |
+| `PATCH` | `/api/admin/products/:id/status` | Admin only | Deactivate or restore inappropriate listings |
 
 ---
 
-### 7. Step-by-Step Execution Guide
+### 6. Automated Testing & Verification
 
-#### Step 1: Install Dependencies
+FARMlink AI features an automated test suite across all modules:
+
 ```bash
-# Backend
-cd backend
-npm install
+# 1. Run Version 3 Buyer Marketplace, Negotiation & Atomic Stock Tests (20 Tests)
+node backend/scripts/testV3OrdersApis.js
 
-# Frontend
-cd ../frontend
-npm install
+# 2. Run Version 2 Farmer Marketplace & Stock Tests (17 Tests)
+node backend/scripts/testMarketplaceApis.js
+
+# 3. Run Version 1 Foundation, Auth & RBAC Tests (14 Tests)
+node backend/scripts/testApis.js
 ```
 
-#### Step 2: Seed Database
-```bash
-# Seed default Admin and sample accounts
-cd backend
-node scripts/seedAdmin.js
+All 51 automated backend test scenarios run and pass with 100% success rate.
 
-# Seed sample crop listings (Wheat, Mustard, Onions, Grapes)
-node scripts/seedProducts.js
+---
+
+### 7. Seed Credentials for Local Testing
+
+| Role | Email | Password | Details |
+|---|---|---|---|
+| **Admin** | `admin@farmlink.ai` | `Admin@FarmLink2026!` | Platform administrator |
+| **Farmer (Ramesh)** | `farmer.ramesh@farmlink.ai` | `Password123!` | Organic farmer in Mehsana, Gujarat |
+| **Farmer (Kavita)** | `farmer.kavita@farmlink.ai` | `Password123!` | Grape & Onion farmer in Nashik, Maharashtra |
+| **Buyer (Ananya)** | `buyer.ananya@farmlink.ai` | `Password123!` | Wholesale Distributor in Bhopal, MP |
+| **Transporter (Vikram)** | `transporter.vikram@farmlink.ai` | `Password123!` | Fleet owner in Indore, MP |
+
+To re-seed test users or products:
+```bash
+node backend/scripts/seedAdmin.js
+node backend/scripts/seedProducts.js
 ```
 
-#### Step 3: Run Automated Test Suites
+---
+
+### 8. Running the Application
+
 ```bash
+# Start Backend (Port 5000)
 cd backend
+npm run dev
 
-# Run Version 1 Test Suite (14 tests)
-node scripts/testApis.js
-
-# Run Version 2 Marketplace Test Suite (17 tests)
-node scripts/testMarketplaceApis.js
-```
-
-#### Step 4: Run Application
-```bash
-# Terminal 1: Backend Server (Port 5000)
-cd backend
-npm start
-
-# Terminal 2: Frontend Dev Server (Port 5173)
+# Start Frontend (Port 5173)
 cd frontend
 npm run dev
 ```
 
-Open your browser at **`http://localhost:5173`**.
+Open `http://localhost:5173` in your browser.
 
 ---
 
-### 8. Demo User Credentials
+### 9. Postman Collection
 
-| Role | Email Address | Password | Portal Features |
-| :--- | :--- | :--- | :--- |
-| **Farmer (Ramesh Patel)** | `farmer.ramesh@farmlink.ai` | `Password123!` | Create & manage produce listings, update stock, upload crop photos |
-| **Farmer (Kavita Sundaram)**| `farmer.kavita@farmlink.ai` | `Password123!` | Manage onion & table grape listings, adjust rates |
-| **Agri Buyer (Ananya Sharma)**| `buyer.ananya@farmlink.ai` | `Password123!` | Inspect farm produce provenance, commercial specs |
-| **Transporter (Vikram Singh)**| `transporter.vikram@farmlink.ai` | `Password123!` | Fleet profile, vehicle capacities |
-| **Administrator** | `admin@farmlink.ai` | `Admin@FarmLink2026!` | Master user directory & all-farmer product moderation |
-
----
-
-### 9. Postman Testing Guide
-
-1. **Farmer Login**:
-   - `POST http://localhost:5000/api/auth/login`
-   - Body: `{"email": "farmer.ramesh@farmlink.ai", "password": "Password123!"}`
-   - Save returned `token`.
-2. **Create Crop Listing (`POST /api/products`)**:
-   - Header: `Authorization: Bearer <FARMER_TOKEN>`
-   - Body:
-     ```json
-     {
-       "cropName": "Organic Basmati Rice 1121",
-       "category": "Grains & Cereals",
-       "description": "Extra-long grain aromatic basmati rice. Sun-dried and aged 12 months.",
-       "quantity": 150,
-       "unit": "quintal",
-       "pricePerUnit": 4200,
-       "qualityGrade": "Grade A (Premium)",
-       "harvestDate": "2026-10-30",
-       "pickupLocation": "Gate 1, Golden Field Farm, Highway Rd",
-       "state": "Gujarat",
-       "district": "Mehsana",
-       "village": "Kadi",
-       "images": ["https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=80&w=800"]
-     }
-     ```
-3. **Get Farmer's Listings (`GET /api/products/my-products`)**:
-   - Header: `Authorization: Bearer <FARMER_TOKEN>`
-4. **Update Available Stock (`PATCH /api/products/:id/stock`)**:
-   - Header: `Authorization: Bearer <FARMER_TOKEN>`
-   - Body: `{"quantity": 120}`
-5. **Admin Moderate Listing (`PATCH /api/admin/products/:id/status`)**:
-   - Header: `Authorization: Bearer <ADMIN_TOKEN>`
-   - Body: `{"status": "deactivated_by_admin"}`
-
----
-
-### 10. Version 3 Roadmap
-
-- **Direct Buyer Contracting & RFQs**: Buyers can initiate escrow-backed purchase agreements for listed crops.
-- **ML Crop Price Forecasting**: Machine learning models predicting mandi crop rates over a 30-day horizon.
-- **Smart Logistics Dispatch**: Automated vehicle load matching and digital e-Waybill generation.
-- **AI Buyer Matching**: Intelligent matchmaking connecting growers with institutional bulk procurement buyers.
+Import `FARMlink-AI-v3.postman_collection.json` into Postman to test all endpoints with pre-configured requests, JWT bearer tokens, and automated variables.

@@ -19,6 +19,7 @@ import { NotFoundPage } from '../pages/public/NotFoundPage';
 import { ProfilePage } from '../pages/common/ProfilePage';
 import { EditProfilePage } from '../pages/common/EditProfilePage';
 import { SettingsPage } from '../pages/common/SettingsPage';
+import { OrderDetailPage } from '../pages/common/OrderDetailPage';
 
 // Dashboards
 import { FarmerDashboard } from '../dashboards/farmer/FarmerDashboard';
@@ -31,6 +32,13 @@ import { FarmerProductsPage } from '../pages/farmer/FarmerProductsPage';
 import { AddProductPage } from '../pages/farmer/AddProductPage';
 import { EditProductPage } from '../pages/farmer/EditProductPage';
 import { ProductDetailPage } from '../pages/farmer/ProductDetailPage';
+
+// Version 3 Buyer Marketplace & Orders Pages
+import { MarketplacePage } from '../pages/buyer/MarketplacePage';
+import { MarketplaceProductDetailPage } from '../pages/buyer/MarketplaceProductDetailPage';
+import { BuyerOrdersPage } from '../pages/buyer/BuyerOrdersPage';
+import { FarmerOrdersPage } from '../pages/farmer/FarmerOrdersPage';
+import { AdminOrdersPage } from '../pages/admin/AdminOrdersPage';
 
 // Helper component to redirect /dashboard to role-specific dashboard
 const DashboardRedirect = () => {
@@ -49,6 +57,9 @@ export const AppRoutes = () => {
         <Route path="/features" element={<FeaturesPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        {/* Marketplace Discovery (Version 3) */}
+        <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path="/marketplace/:id" element={<MarketplaceProductDetailPage />} />
         {/* Public Product Inspection */}
         <Route path="/products/:id" element={<ProductDetailPage />} />
       </Route>
@@ -64,7 +75,7 @@ export const AppRoutes = () => {
         {/* Smart Index /dashboard */}
         <Route path="/dashboard" element={<DashboardRedirect />} />
 
-        {/* Farmer Dashboard & Marketplace (Version 2) */}
+        {/* Farmer Dashboard & Marketplace (Version 2 & 3) */}
         <Route
           path="/dashboard/farmer"
           element={
@@ -105,13 +116,46 @@ export const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
+        {/* Farmer Incoming Orders & Negotiations */}
+        <Route
+          path="/dashboard/farmer/orders"
+          element={
+            <ProtectedRoute allowedRoles={['farmer']}>
+              <FarmerOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/farmer/orders/:id"
+          element={
+            <ProtectedRoute allowedRoles={['farmer', 'admin']}>
+              <OrderDetailPage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Buyer Dashboard */}
+        {/* Buyer Dashboard & Orders (Version 3) */}
         <Route
           path="/dashboard/buyer"
           element={
             <ProtectedRoute allowedRoles={['buyer']}>
               <BuyerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/buyer/orders"
+          element={
+            <ProtectedRoute allowedRoles={['buyer']}>
+              <BuyerOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/buyer/orders/:id"
+          element={
+            <ProtectedRoute allowedRoles={['buyer', 'admin']}>
+              <OrderDetailPage />
             </ProtectedRoute>
           }
         />
@@ -126,12 +170,28 @@ export const AppRoutes = () => {
           }
         />
 
-        {/* Admin Dashboard */}
+        {/* Admin Dashboard & Orders Audit */}
         <Route
           path="/dashboard/admin"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/orders"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminOrdersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/admin/orders/:id"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <OrderDetailPage />
             </ProtectedRoute>
           }
         />

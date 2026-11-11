@@ -56,6 +56,16 @@ export const Navbar = () => {
               Home
             </NavLink>
             <NavLink
+              to="/marketplace"
+              className={({ isActive }) =>
+                `text-sm font-medium transition-colors ${
+                  isActive ? 'text-emerald-600 font-semibold' : 'text-slate-600 hover:text-slate-900'
+                }`
+              }
+            >
+              Produce Marketplace
+            </NavLink>
+            <NavLink
               to="/about"
               className={({ isActive }) =>
                 `text-sm font-medium transition-colors ${
@@ -178,6 +188,13 @@ export const Navbar = () => {
             className="block px-3 py-2 text-base font-medium text-slate-700 hover:bg-emerald-50 rounded-lg"
           >
             Home
+          </Link>
+          <Link
+            to="/marketplace"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 text-base font-medium text-emerald-700 font-semibold hover:bg-emerald-50 rounded-lg"
+          >
+            Produce Marketplace
           </Link>
           <Link
             to="/about"
